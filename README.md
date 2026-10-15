@@ -2,7 +2,7 @@
 
 Browser verification that AI agents purchase through x402 on Avalanche Fuji testnet.
 
-This checkout is testnet-only. Mainnet payments are disabled. Payment activation still requires a receiving address and a facilitator supporting Fuji (`eip155:43113`). Network settings are shared by the dashboard and worker in `worker/network.json`.
+This checkout is testnet-only. Mainnet payments are disabled. The configured public receiving address is `0x7975B904097F460900D70e1817158f2dFA08945e`. Payment activation still requires a facilitator supporting Fuji (`eip155:43113`). Network settings are shared by the dashboard and worker in `worker/network.json`.
 
 ## Current implementation
 

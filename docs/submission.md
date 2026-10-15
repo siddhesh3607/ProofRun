@@ -37,7 +37,7 @@ The built-in free fixture is useful for previewing the product, but it is not a 
 Built with Codex for implementation, debugging, and documentation. Review the architecture and payment-state logic before presenting; explain the code in your own words.
 
 ## Items still required before submission
-- Receiving wallet, compatible facilitator, and persistent browser-worker hosting.
+- Fuji-compatible facilitator and persistent browser-worker hosting. Receiving wallet is configured in `worker/.env.example`.
 - An actual verified Fuji testnet payment.
 - A public source repository (the Sites source repository is not a substitute for a public GitHub link).
 - Live demonstration on the final deployment.

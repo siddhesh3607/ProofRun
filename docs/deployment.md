@@ -5,7 +5,7 @@ Continue the existing Site `appgprj_6ab16e49e23881919c29898a146c501d`; preserve 
 ## Stage with payments disabled
 
 1. Provision a Linux container host with Chromium sandbox support, 2 GB RAM, and a persistent `/data` volume. The Sites dashboard cannot host Chromium.
-2. On that host, copy `worker/.env.example` to `worker/.env`. Generate a persistent random `SERVICE_TOKEN` of at least 32 characters. Set `PUBLIC_API_URL` to the worker's final HTTPS origin. Leave `PAY_TO`, `FACILITATOR_URL`, and `FACILITATOR_TOKEN` empty. Do not copy the local SQLite database into the image.
+2. On that host, copy `worker/.env.example` to `worker/.env`. Generate a persistent random `SERVICE_TOKEN` of at least 32 characters. Set `PUBLIC_API_URL` to the worker's final HTTPS origin. The template sets `PAY_TO` to the owner's public address, `0x7975B904097F460900D70e1817158f2dFA08945e`. Leave `FACILITATOR_URL` and `FACILITATOR_TOKEN` empty while staging with payments disabled. Do not copy the local SQLite database into the image.
 3. Run `docker compose up -d --build` from the project root. The worker binds localhost on the host; terminate HTTPS with a reverse proxy. Preserve the named volume across updates. Do not use `docker compose down -v` when updating.
 4. Check `/health`: expect `connected: true`, `paymentsReady: false`, and `paymentStatus: "configuration_required"`. Docker health checks test service availability, so disabled payments do not make the container unhealthy.
 5. Set the existing dashboard's server-side `PROOFRUN_WORKER_URL` to the worker HTTPS origin and `PROOFRUN_SERVICE_TOKEN` to the same private token. Keep secrets out of the hosting manifest, client code, and archives.
@@ -20,7 +20,7 @@ From `worker`: `npm test`, then `TEST_BROWSER=1 npm test` on Linux. On Windows, 
 
 ## Activate later
 
-Wait for the receiving wallet address. Then set `PAY_TO` and a HTTPS `FACILITATOR_URL` that supports exact payments on `eip155:43113` (plus its bearer token if required), restart the worker, and verify `paymentsReady: true` and `network: "eip155:43113"`. Keep the service token stable. Verify a test-USDC payment and its Fuji explorer receipt before claiming testnet settlement. Test tokens have no financial value. No on-chain payment has been made during preparation. Mainnet is not enabled by this configuration.
+The receiving address is configured. Set a HTTPS `FACILITATOR_URL` that supports exact payments on `eip155:43113` (plus its bearer token if required), restart the worker, and verify `paymentsReady: true` and `network: "eip155:43113"`. Keep the service token stable. Verify a test-USDC payment and its Fuji explorer receipt before claiming testnet settlement. Test tokens have no financial value. No on-chain payment has been made during preparation. Mainnet is not enabled by this configuration.
 
 ## Release checks and recovery
 
