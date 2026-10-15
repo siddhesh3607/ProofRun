@@ -1,0 +1,36 @@
+{
+  "id": "7ae03858-187d-48ed-b0ee-c90d8c13dcad",
+  "url": "proofrun:fixture",
+  "status": "completed",
+  "createdAt": "2026-10-15T21:23:04.883Z",
+  "demo": true,
+  "price": "0",
+  "result": {
+    "checks": [
+      {
+        "name": "Page loads",
+        "passed": true,
+        "expected": "Demo fixture renders",
+        "observed": "Fixture rendered in Chromium"
+      },
+      {
+        "name": "Form validation",
+        "passed": false,
+        "expected": "Please enter your email",
+        "observed": "Expected message was not visible after clicking the submit button. locator.waitFor: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByText('Please enter your email').first() to be visible\u001b[22m\n"
+      },
+      {
+        "name": "Browser console",
+        "passed": false,
+        "expected": "No JavaScript or console errors",
+        "observed": "1 error(s) captured"
+      }
+    ],
+    "console": [
+      "Demo bug: validation handler did not display an error"
+    ],
+    "durationMs": 9800,
+    "screenshot": "screenshot.png",
+    "finalUrl": "proofrun:fixture"
+  }
+}

@@ -1,0 +1,25 @@
+services:
+  worker:
+    build: ./worker
+    ports:
+      - "127.0.0.1:4021:4021"
+    env_file: ./worker/.env
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /data
+    volumes:
+      - proofrun-data:/data
+    init: true
+    shm_size: 1gb
+    mem_limit: 2g
+    cpus: 2
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4021/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+volumes:
+  proofrun-data:
+
