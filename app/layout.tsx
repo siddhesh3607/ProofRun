@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ProofRun — Browser verification for agents",
-  description: "Browser checks purchased through x402 on Avalanche. Screenshots, console errors, and actionable reports.",
+  description: "Browser checks with x402 on Avalanche Fuji testnet. Test USDC, screenshots, console errors, and actionable reports.",
   other: {
     "codex-preview": "development",
   },

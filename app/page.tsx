@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import paymentNetwork from "@/worker/network.json";
 import {
   ArrowUpRight,
   Play,
@@ -26,6 +27,7 @@ type Run = {
   createdAt: string;
   demo: boolean;
   transaction?: string;
+  network?: string;
   price: string;
   result?: {
     checks: {
@@ -99,32 +101,55 @@ export default function Home() {
     const eth = (window as any).ethereum;
     if (!eth) throw new Error("Install Core or MetaMask to pay for a run.");
     const a = await eth.request({ method: "eth_requestAccounts" });
-    await eth.request({
-      method: "wallet_switchEthereumChain",
-      params: [{ chainId: "0xa86a" }],
-    });
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: paymentNetwork.chainIdHex }],
+      });
+    } catch (e) {
+      if ((e as { code?: number }).code !== 4902) throw e;
+      await eth.request({
+        method: "wallet_addEthereumChain",
+        params: [{
+          chainId: paymentNetwork.chainIdHex,
+          chainName: "Avalanche Fuji Testnet",
+          nativeCurrency: { name: "Avalanche", symbol: "AVAX", decimals: 18 },
+          rpcUrls: [paymentNetwork.rpcUrl],
+          blockExplorerUrls: [paymentNetwork.explorerUrl],
+        }],
+      });
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: paymentNetwork.chainIdHex }],
+      });
+    }
     setWallet(a[0]);
     return eth;
   }
   async function pay(id: string) {
     const eth = await connect();
     const { createWalletClient, custom } = await import("viem");
-    const { avalanche } = await import("viem/chains");
+    const { avalancheFuji } = await import("viem/chains");
     const { x402Client, wrapFetchWithPayment } = await import("@x402/fetch");
     const { ExactEvmScheme } = await import("@x402/evm/exact/client");
     const a = await eth.request({ method: "eth_accounts" });
     const signer = createWalletClient({
       account: a[0],
-      chain: avalanche,
+      chain: avalancheFuji,
       transport: custom(eth),
     });
     const c = new x402Client().register(
-      "eip155:43114",
+      paymentNetwork.network as `eip155:${number}`,
       new ExactEvmScheme({
         address: a[0],
         signTypedData: (msg) => signer.signTypedData(msg as any),
       }),
     );
+    c.onBeforePaymentCreation(async ({ selectedRequirements: r }) => {
+      if (r.network !== paymentNetwork.network ||
+          r.asset.toLowerCase() !== paymentNetwork.usdc.toLowerCase())
+        return { abort: true, reason: "Only Fuji testnet USDC is supported." };
+    });
     const r = await wrapFetchWithPayment(fetch, c)(
       "/api/proofrun/runs/" + id + "/execute",
       { method: "POST" },
@@ -204,7 +229,7 @@ export default function Home() {
     "import { privateKeyToAccount } from 'viem/accounts';",
     "",
     "const client = new x402Client().register(",
-    "  'eip155:43114',",
+    "  'eip155:43113',",
     "  new ExactEvmScheme(privateKeyToAccount(process.env.AGENT_KEY))",
     ");",
     "const pay = wrapFetchWithPayment(fetch, client);",
@@ -257,7 +282,7 @@ export default function Home() {
           <div className="network-mark">
             ▲ <span>Avalanche C-Chain</span>
           </div>
-          <p>Mainnet · USDC · x402</p>
+          <p>Fuji testnet · Test USDC · x402</p>
           <span
             className={"pill " + (health?.paymentsReady ? "green" : "amber")}
           >
@@ -317,7 +342,7 @@ export default function Home() {
                     ? "Reopen saved reports without paying for another run."
                     : view === "api"
                       ? "Let your coding agent purchase browser checks with x402."
-                      : "Connect browser execution and mainnet settlement."}
+                      : "Connect browser execution and Fuji testnet settlement."}
               </p>
             </div>
             <span className="protocol-tag">
@@ -358,13 +383,13 @@ export default function Home() {
                   <span>Price per run</span>
                   <strong>
                     {health?.price || "0.10"}
-                    <small> USDC</small>
+                    <small> test USDC</small>
                   </strong>
                 </div>
                 <div>
                   <span>Settlement network</span>
                   <strong className="network-stat">
-                    ▲ Avalanche<small>C-Chain mainnet</small>
+                    ▲ Avalanche<small>C-Chain Fuji testnet</small>
                   </strong>
                 </div>
               </div>
@@ -458,7 +483,7 @@ export default function Home() {
                     </div>
                     <div className="price-row">
                       <span>One browser run</span>
-                      <strong>{health?.price || "0.10"} USDC</strong>
+                      <strong>{health?.price || "0.10"} test USDC</strong>
                     </div>
                     <button
                       className="primary"
@@ -473,7 +498,7 @@ export default function Home() {
                     </button>
                     {!health?.paymentsReady && (
                       <p className="activation-note">
-                        Mainnet payments are not activated yet.
+                        Testnet payments are not activated yet.
                       </p>
                     )}
                     <button
@@ -659,14 +684,14 @@ export default function Home() {
                           </details>
                         </>
                       )}
-                      {active.transaction && (
+                      {active.transaction && active.network === paymentNetwork.network && (
                         <a
                           className="transaction"
-                          href={"https://snowtrace.io/tx/" + active.transaction}
+                          href={paymentNetwork.explorerUrl + "/tx/" + active.transaction}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          View mainnet payment <ExternalLink size={14} />
+                          View Fuji testnet payment <ExternalLink size={14} />
                         </a>
                       )}
                       <button className="secondary" onClick={download}>
@@ -712,7 +737,7 @@ export default function Home() {
                     <code>POST /v1/runs/:id/execute</code>
                     <p>
                       The x402 client handles the 402 challenge. Payments settle
-                      in USDC on Avalanche mainnet.
+                      in test USDC on Avalanche Fuji testnet.
                     </p>
                   </li>
                   <li>
@@ -767,8 +792,8 @@ export default function Home() {
               </div>
               <div className="setting">
                 <div>
-                  <strong>Avalanche mainnet payments</strong>
-                  <p>USDC settlement through an x402 facilitator.</p>
+                  <strong>Avalanche Fuji testnet payments</strong>
+                  <p>Test USDC settlement through an x402 facilitator. Tokens have no financial value.</p>
                 </div>
                 <span
                   className={
@@ -781,9 +806,9 @@ export default function Home() {
               <div className="setting">
                 <div>
                   <strong>Network</strong>
-                  <p>Avalanche C-Chain · Chain ID 43114</p>
+                  <p>Avalanche Fuji C-Chain · Chain ID {paymentNetwork.chainId}</p>
                 </div>
-                <span className="pill">MAINNET</span>
+                <span className="pill">TESTNET</span>
               </div>
               <p>
                 Deploy the included browser worker with a persistent volume, set
@@ -858,7 +883,7 @@ function RunTable({ runs, select }: { runs: Run[]; select: (r: Run) => void }) {
                   {r.demo
                     ? "Free demo"
                     : r.transaction
-                      ? r.price + " USDC"
+                      ? r.price + (r.network === paymentNetwork.network ? " test USDC" : " USDC")
                       : "Unpaid"}
                 </td>
                 <td>

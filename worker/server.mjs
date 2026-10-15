@@ -17,6 +17,7 @@ import {
   decodePayment,
   challenge,
   NETWORK,
+  isFujiQuote,
 } from "./payments.mjs";
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 const same = (a, b) =>
@@ -185,7 +186,7 @@ export async function createApp(config = {}, injected = {}) {
     if (!payments)
       return res
         .status(503)
-        .json({ error: "Mainnet payments are not activated." });
+        .json({ error: "Testnet payments are not activated." });
     if (queue.length >= 12)
       return res
         .status(503)
@@ -291,11 +292,13 @@ export async function createApp(config = {}, injected = {}) {
     if (!payments)
       return res
         .status(503)
-        .json({ error: "Mainnet payments are not activated." });
+        .json({ error: "Testnet payments are not activated." });
     if (queue.length >= 12)
       return res
         .status(503)
         .json({ error: "Browser queue is full. No payment was attempted." });
+    if (!isFujiQuote(JSON.parse(row.requirements)))
+      return res.status(409).json({ error: "This saved quote is not for Fuji testnet. Create a new run." });
     const required = challenge(row, origin);
     const header = req.get("payment-signature");
     if (!header)

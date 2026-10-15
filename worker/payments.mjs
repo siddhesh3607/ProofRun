@@ -1,7 +1,12 @@
 import { HTTPFacilitatorClient, x402ResourceServer } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
-export const NETWORK = "eip155:43114";
-export const USDC = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E";
+import network from "./network.json" with { type: "json" };
+export const NETWORK = network.network;
+export const USDC = network.usdc;
+export function isFujiQuote(q) {
+  return q?.network === NETWORK && q?.scheme === "exact" &&
+    q?.asset?.toLowerCase() === USDC.toLowerCase();
+}
 export async function createPayments(config) {
   if (!config.payTo || !config.facilitator) return null;
   if (
@@ -35,9 +40,9 @@ export async function createPayments(config) {
     },
     maxTimeoutSeconds: 300,
   });
-  if (!requirements.length)
+  if (!requirements.length || !isFujiQuote(requirements[0]))
     throw Error(
-      "Facilitator does not support Avalanche mainnet exact payments",
+      "Facilitator does not support Avalanche Fuji testnet exact payments",
     );
   return {
     requirements: requirements[0],
@@ -62,8 +67,7 @@ export function decodePayment(header) {
   if (
     !/^0x[0-9a-fA-F]{40}$/.test(p.payload?.authorization?.from || "") ||
     p.x402Version !== 2 ||
-    p.accepted?.network !== NETWORK ||
-    p.accepted?.scheme !== "exact" ||
+    !isFujiQuote(p.accepted) ||
     !/^0x[0-9a-fA-F]{64}$/.test(p.payload?.authorization?.nonce || "")
   )
     throw Error("Invalid x402 v2 exact payment");

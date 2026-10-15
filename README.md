@@ -1,15 +1,17 @@
 # ProofRun
 
-Browser verification that AI agents purchase through x402 on Avalanche C-Chain.
+Browser verification that AI agents purchase through x402 on Avalanche Fuji testnet.
+
+This checkout is testnet-only. Mainnet payments are disabled. Payment activation still requires a receiving address and a facilitator supporting Fuji (`eip155:43113`). Network settings are shared by the dashboard and worker in `worker/network.json`.
 
 ## Current implementation
 
 - Dashboard: test configuration, saved run history, screenshot/report viewer, JSON export, wallet payment client, API instructions.
 - Worker: real isolated Chromium jobs, SQLite history and payment state, screenshot artifacts, three check types.
-- Payment network: Avalanche C-Chain mainnet (eip155:43114), native USDC.
+- Payment network: Avalanche C-Chain Fuji testnet (eip155:43113), test USDC.
 - x402 v2 exact-payment integration through the official @x402 SDK.
 - A no-charge built-in fixture deliberately exposes a broken form validation handler.
-- Mainnet activation requires PAY_TO and a working Avalanche-compatible facilitator.
+- Testnet activation requires PAY_TO and a working Avalanche-compatible facilitator.
 - Browser hosting requires a long-running Node service with a persistent data volume. Sites hosts the dashboard and HTTP proxy; it does not run Chromium.
 
 No blockchain contract deployment is required for standard x402 USDC settlement. No private key is stored by the resource server; the facilitator is responsible for submission and gas. The agent client signs with its own wallet. The browser dashboard uses a wallet extension.
@@ -51,21 +53,25 @@ Open the printed local URL and select **Try the built-in demo**. This executes a
 
 The dashboard identifies local sessions using an HttpOnly cookie. Reports are durable on the worker volume, but clearing that cookie loses dashboard access to that session's reports. Agent reports use an independent bearer access token. Never share that token in public links.
 
-## Mainnet activation
+## Testnet activation
 
 For staging with payments disabled and the existing Site identity preserved, see [deployment handoff](docs/deployment.md).
 
 1. Deploy worker/Dockerfile on a container host that supports persistent disks, Chromium, and its sandbox. Mount /data and reserve 2 GB memory. Keep the container non-root.
 2. Put the worker behind HTTPS. Set PUBLIC_API_URL to its actual HTTPS origin.
 3. Set SERVICE_TOKEN, PAY_TO (your public receiving address), FACILITATOR_URL, and optionally FACILITATOR_TOKEN. PRICE_ATOMIC defaults to 100000 (0.10 USDC; USDC uses 6 decimals).
-4. Confirm GET /health reports paymentsReady=true. Initialization checks facilitator support for the exact scheme on Avalanche mainnet. A facilitator outage or missing configuration disables charging.
+4. Confirm GET /health reports paymentsReady=true. Initialization checks facilitator support for the exact scheme on Avalanche Fuji testnet. A facilitator outage or missing configuration disables charging.
 5. Set the hosted dashboard's PROOFRUN_WORKER_URL and PROOFRUN_SERVICE_TOKEN in server-side environment variables.
-6. Fund a payer wallet with a small amount of Avalanche native USDC and perform one explicitly approved payment. Check the explorer receipt, report, retry behavior, and recipient balance.
-7. Record the actual mainnet demo before submitting.
+6. Fund a payer wallet with a small amount of Avalanche test USDC and perform one explicitly approved payment. Check the explorer receipt, report, retry behavior, and recipient balance.
+7. Record the actual Fuji testnet demo before submitting.
 
-Native USDC: 0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E.
-Chain ID: 43114. RPC: https://api.avax.network/ext/bc/C/rpc.
-Do not substitute bridged USDC.e.
+Fuji test USDC: 0x5425890298aed601595a70AB815c96711a31Bc65.
+Chain ID: 43113. RPC: https://api.avax-test.network/ext/bc/C/rpc.
+Use Fuji test USDC only. These tokens have no financial value.
+
+Official network and token references: [Avalanche network setup](https://build.avax.network/academy/blockchain/x402-payment-infrastructure/04-x402-on-avalanche/02-network-setup), [Circle USDC addresses](https://developers.circle.com/stablecoins/usdc-contract-addresses). Obtain test USDC from [Circle's faucet](https://faucet.circle.com/) by choosing Avalanche Fuji.
+
+Old mainnet quotes cannot be executed or reconciled by this testnet worker. Retain existing records; create a new testnet run with a fresh idempotency key. Mainnet settlement reconciliation, if ever needed, requires the matching historical network configuration.
 
 Use the same service-token value for the dashboard and worker, but never expose it in NEXT_PUBLIC variables, browser code, URLs, or Git. Facilitator authentication currently supports a static Bearer token; facilitators requiring per-request JWT signing need an auth adapter.
 
@@ -138,11 +144,11 @@ TEST_BROWSER=1 npm test
 
 PowerShell: set `$env:TEST_BROWSER='1'` before running the test command.
 
-Core tests use a mock facilitator to exercise authorization rejection, one-time settlement, concurrent retries, bearer access, nonce replay rejection, and uncertain settlement recovery. They do not claim real mainnet settlement. Browser tests execute Chromium and verify a screenshot plus the expected failed validation check.
+Core tests use a mock facilitator to exercise authorization rejection, one-time settlement, concurrent retries, bearer access, nonce replay rejection, and uncertain settlement recovery. They do not claim real Fuji testnet settlement. Browser tests execute Chromium and verify a screenshot plus the expected failed validation check.
 
 ## Submission
 
-See docs/submission.md for the demo script and pitch outline. Include the deployed app, public worker endpoint, source repository, pitch slides, and a video under three minutes. Only claim mainnet operation after an actual payment has been verified.
+See docs/submission.md for the demo script and pitch outline. Include the deployed app, public worker endpoint, source repository, pitch slides, and a video under three minutes. Only claim Fuji testnet operation after an actual payment has been verified.
 
 Sources:
 - https://build.avax.network/events/3f8d455d-1eb5-425b-b859-4261a0ff8ad6

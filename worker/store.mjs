@@ -56,6 +56,7 @@ export function publicRun(r) {
     demo: !!r.demo,
     price: r.price,
     transaction: r.tx || undefined,
+    network: r.requirements ? JSON.parse(r.requirements).network : undefined,
     result: r.result ? JSON.parse(r.result) : undefined,
     error: r.error || undefined,
   };

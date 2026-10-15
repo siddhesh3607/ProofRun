@@ -1,9 +1,10 @@
 // Run on the worker host with the worker stopped. Validates the exact on-chain
 // USDC authorization nonce and transfer before enabling a free execution retry.
 import { createPublicClient, http, parseEventLogs, parseAbi } from "viem";
-import { avalanche } from "viem/chains";
+import { avalancheFuji } from "viem/chains";
 import { createStore } from "./store.mjs";
-import { USDC } from "./payments.mjs";
+import { USDC, isFujiQuote } from "./payments.mjs";
+import network from "./network.json" with { type: "json" };
 const [id, hash] = process.argv.slice(2);
 if (!id || !/^0x[0-9a-fA-F]{64}$/.test(hash || ""))
   throw Error(
@@ -16,12 +17,15 @@ try {
     throw Error("Run does not need reconciliation");
   const p = JSON.parse(r.payment),
     q = JSON.parse(r.requirements);
+  if (!isFujiQuote(q)) throw Error("Saved payment is not for Fuji testnet.");
   const client = createPublicClient({
-    chain: avalanche,
+    chain: avalancheFuji,
     transport: http(
-      process.env.AVALANCHE_RPC_URL || "https://api.avax.network/ext/bc/C/rpc",
+      process.env.AVALANCHE_RPC_URL || network.rpcUrl,
     ),
   });
+  if (await client.getChainId() !== network.chainId)
+    throw Error("RPC must connect to Avalanche Fuji (43113).");
   const receipt = await client.getTransactionReceipt({ hash });
   if (receipt.status !== "success") throw Error("Transaction failed");
   const logs = parseEventLogs({

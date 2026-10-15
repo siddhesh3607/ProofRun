@@ -1,5 +1,15 @@
 # Verification — October 16, 2026 (IST)
 
+## Current configuration: Fuji testnet
+
+The project now targets Avalanche Fuji (`eip155:43113`) and Circle test USDC. Mainnet authorizations and historical mainnet quotes are rejected before settlement. Wallet network selection, agent client, reconciliation RPC, and explorer links use Fuji. Payments remain inactive while receiving wallet/facilitator configuration is missing. No on-chain transaction was made.
+
+Seven core tests and TypeScript checks passed after the switch, including regression tests for mainnet rejection and one-time settlement. The local health proxy returned `network: eip155:43113` and `paymentsReady: false`. Browser service setup showed Fuji chain 43113, test USDC, and payments not activated; see `qa-fuji-setup.png`.
+
+The final production build passed. A fresh free demo completed in the dashboard with the expected 1/3 passing checks, missing validation message, console error, and screenshot. Wallet signing and on-chain Fuji settlement await the receiving address and facilitator; they have not been verified.
+
+The original verification below describes the earlier mainnet-configured checkout; its screenshot is historical evidence, not the current configuration.
+
 The existing ProofRun implementation and Site identity were retained.
 
 ## Passed

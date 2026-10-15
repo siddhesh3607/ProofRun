@@ -6,7 +6,21 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { isPublicAddress, validateTarget } from "../security.mjs";
 import { createApp } from "../server.mjs";
-import { NETWORK, USDC, decodePayment } from "../payments.mjs";
+import { NETWORK, USDC, decodePayment, isFujiQuote } from "../payments.mjs";
+
+test("Fuji payments reject mainnet and other token authorizations", () => {
+  assert.equal(NETWORK, "eip155:43113");
+  assert.equal(USDC, "0x5425890298aed601595a70AB815c96711a31Bc65");
+  const accepted = { network: NETWORK, scheme: "exact", asset: USDC };
+  const encode = (q) => Buffer.from(JSON.stringify({
+    x402Version: 2, accepted: q,
+    payload: { authorization: { from: "0x" + "2".repeat(40), nonce: "0x" + "a".repeat(64) } },
+  })).toString("base64");
+  assert.ok(isFujiQuote(accepted));
+  assert.equal(decodePayment(encode(accepted)).accepted.network, NETWORK);
+  assert.throws(() => decodePayment(encode({ ...accepted, network: "eip155:43114" })));
+  assert.throws(() => decodePayment(encode({ ...accepted, asset: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E" })));
+});
 test("egress policy rejects private, mapped, link-local, multicast and encoded loopback destinations", () => {
   for (const ip of [
     "127.0.0.1",
@@ -161,6 +175,7 @@ test("run access, 402, idempotent creation and concurrent settlement", async (t)
     headers: { Authorization: "Bearer " + r.accessToken },
   }).then((r) => r.json());
   assert.equal(result.status, "completed");
+  assert.equal(result.network, "eip155:43113");
   assert.equal(result.result.checks[0].passed, true);
   const other = await s.create();
   assert.equal((await s.execute(other)).status, 409);
@@ -173,6 +188,20 @@ test("uncertain settlement never automatically charges again", async (t) => {
   const result = await s.execute(r);
   assert.equal((await result.json()).status, "settlement_unknown");
   assert.equal(s.charges, 1);
+  assert.equal(s.executions, 0);
+});
+
+test("a saved mainnet quote cannot be challenged or settled after the Fuji switch", async (t) => {
+  const s = await setup(t);
+  const run = await s.create();
+  const old = JSON.parse(s.service.store.get(run.id).requirements);
+  old.network = "eip155:43114";
+  old.asset = "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E";
+  s.service.store.db.prepare("UPDATE runs SET requirements=? WHERE id=?").run(JSON.stringify(old), run.id);
+  const response = await s.execute(run);
+  assert.equal(response.status, 409);
+  assert.equal(response.headers.get("payment-required"), null);
+  assert.equal(s.charges, 0);
   assert.equal(s.executions, 0);
 });
 test("demo and listing require dashboard authentication", async (t) => {

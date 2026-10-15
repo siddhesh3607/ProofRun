@@ -20,7 +20,7 @@ From `worker`: `npm test`, then `TEST_BROWSER=1 npm test` on Linux. On Windows, 
 
 ## Activate later
 
-Wait for the receiving wallet address. Then set `PAY_TO` and a compatible HTTPS `FACILITATOR_URL` (plus its bearer token if required), restart the worker, and verify `paymentsReady: true`. Keep the service token stable. Only an explicitly approved real native-USDC payment and checked receipt can establish mainnet operation. No real payment has been made during preparation.
+Wait for the receiving wallet address. Then set `PAY_TO` and a HTTPS `FACILITATOR_URL` that supports exact payments on `eip155:43113` (plus its bearer token if required), restart the worker, and verify `paymentsReady: true` and `network: "eip155:43113"`. Keep the service token stable. Verify a test-USDC payment and its Fuji explorer receipt before claiming testnet settlement. Test tokens have no financial value. No on-chain payment has been made during preparation. Mainnet is not enabled by this configuration.
 
 ## Release checks and recovery
 
